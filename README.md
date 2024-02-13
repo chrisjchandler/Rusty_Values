@@ -10,8 +10,9 @@ cargo run --release
 
 
 
-Dockerfile Instructions
-First, create a Dockerfile in the root directory of your Rust project. This file will instruct Docker on how to build an image of your Rust application:
+#Dockerfile Instructions
+
+create a Dockerfile in the root directory of your Rust project. This file will instruct Docker on how to build an image of your Rust application:
 
 
 # Use the official Rust image as the base image
@@ -42,8 +43,9 @@ COPY --from=builder /key_value_store/target/release/key_value_store /usr/local/b
 # Set the CMD to your binary
 CMD ["key_value_store"]
 
-Kubernetes Deployment
-Next, create a Kubernetes deployment file, key_value_store_deployment.yaml, to deploy your application:
+# Kubernetes Deployment
+
+create a Kubernetes deployment file, key_value_store_deployment.yaml, to deploy your application:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
