@@ -3,7 +3,9 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use warp::{http::StatusCode, Filter, Rejection, reject, reply::json as warp_json};
+use warp::{Filter, http::StatusCode, Rejection, reject, reply::json as warp_json};
+use std::{env};
+
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct KeyValueStore {
@@ -12,9 +14,7 @@ struct KeyValueStore {
 
 impl KeyValueStore {
     fn new() -> Self {
-        Self {
-            store: HashMap::new(),
-        }
+        Self { store: HashMap::new() }
     }
 
     async fn get_value(&self, key: &str) -> Option<String> {
@@ -32,39 +32,54 @@ struct KeyValue {
     value: String,
 }
 
+async fn handle_get(key: String, store: Arc<Mutex<KeyValueStore>>) -> Result<impl warp::Reply, Rejection> {
+    let locked_store = store.lock().await;
+    let value = locked_store.get_value(&key).await;
+    match value {
+        Some(value) => Ok(warp_json(&value)),
+        None => Err(reject::not_found()),
+    }
+}
+
+async fn handle_insert(kv: KeyValue, store: Arc<Mutex<KeyValueStore>>) -> Result<impl warp::Reply, Rejection> {
+    let mut locked_store = store.lock().await;
+    locked_store.insert_value(kv.key, kv.value).await;
+    Ok(warp::reply::with_status(warp_json(&json!({"message": "Inserted"})), StatusCode::CREATED))
+}
+
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let store = Arc::new(Mutex::new(KeyValueStore::new()));
+    let store_get = store.clone(); // Clone for use in the get route
+    let store_insert = store.clone(); // Clone for use in the insert route
 
-    // Clone `store` for `get_route`
-    let store_for_get = store.clone();
-    let get_route = warp::path("get")
-        .and(warp::path::param())
-        .and(warp::any().map(move || store_for_get.clone()))
-        .and_then(|key: String, store: Arc<Mutex<KeyValueStore>>| async move {
-            let locked_store = store.lock().await;
-            let value = locked_store.get_value(&key).await;
-            match value {
-                Some(value) => Ok::<_, Rejection>(warp_json(&value)),
-                None => Err(reject::not_found()),
-            }
-        });
+    let routes = warp::path("api")
+        .and(
+            warp::path("get")
+                .and(warp::path::param())
+                .and(warp::any().map(move || store_get.clone()))
+                .and_then(handle_get)
+            .or(
+                warp::path("insert")
+                .and(warp::post())
+                .and(warp::body::json())
+                .and(warp::any().map(move || store_insert.clone()))
+                .and_then(handle_insert)
+            )
+        );
 
-    // `store` is already cloned for `post_route`
-    let post_route = warp::post()
-        .and(warp::path("insert"))
-        .and(warp::body::json())
-        .and(warp::any().map(move || store.clone()))
-        .and_then(|kv: KeyValue, store: Arc<Mutex<KeyValueStore>>| async move {
-            let mut locked_store = store.lock().await;
-            locked_store.insert_value(kv.key, kv.value).await;
-            let reply = warp::reply::json(&json!({"message": "Inserted"}));
-            Ok::<_, Rejection>(warp::reply::with_status(reply, StatusCode::CREATED))
-        });
-
-    let routes = get_route.or(post_route);
-
-    warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+    let use_tls = env::var("USE_TLS").unwrap_or_default() == "true";
+    if use_tls {
+        // Here you would insert your TLS setup code requires valid certs
+        // For example, using hyper and hyper_rustls (commented out because you have no certificates):
+        // let cert_bytes = fs::read("path/to/cert.pem").expect("cannot open certificate file");
+        // let key_bytes = fs::read("path/to/key.pem").expect("cannot open key file");
+        // Setup TLS server here
+    } else {
+        warp::serve(routes)
+            .run(([127, 0, 0, 1], 3030))
+            .await;
+    }
 
     Ok(())
 }

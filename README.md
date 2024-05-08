@@ -87,3 +87,82 @@ Additional Tips
 Ensure your server is running and accessible at the specified address and port before using these curl commands.
 If your application or Kubernetes service is not hosted locally, replace localhost:3030 with the appropriate hostname or IP address and port number.
 For debugging or additional information, you can add the -v (verbose) flag to your curl commands to get more details about the request and response.
+
+
+How to enable TLS
+
+To secure the API with TLS, you will need to obtain TLS certificates. You can use self-signed certificates for testing or certificates issued by a Certificate Authority (CA) for production environments. Below are instructions on how to generate self-signed certificates and configure the server to use TLS.
+
+Generating Self-Signed Certificates
+You can use OpenSSL to generate a self-signed certificate and private key. Run the following commands in your terminal:
+
+# Generate a Private Key
+openssl genrsa -out key.pem 2048
+
+# Generate a Self-Signed Certificate
+openssl req -new -x509 -key key.pem -out cert.pem -days 365
+
+During the certificate creation process, you will be prompted to enter details such as the country, state, and common name (domain name). For local testing, you can use localhost as the common name.
+
+Configuring the Server for TLS
+Set the Environment Variable: Before starting the server, set the USE_TLS environment variable to true to enable TLS:
+
+export USE_TLS=true
+
+On Windows, you can set the environment variable like this:
+
+set USE_TLS=true
+
+Move Certificates to Accessible Location: Ensure your certificates (cert.pem and key.pem) are placed in a directory accessible by the server application, or update the paths in the server code to match where you have stored these files.
+Start the Server: Run your server application. If the USE_TLS environment variable is set, it will start with TLS enabled and use the provided certificates:
+
+
+Certainly! Below is a suggested amendment for your README.md file that includes instructions on how to enable TLS for your server. This assumes that you have already set up the server code to support optional TLS as discussed previously.
+
+Enabling TLS
+To secure the API with TLS, you will need to obtain TLS certificates. You can use self-signed certificates for testing or certificates issued by a Certificate Authority (CA) for production environments. Below are instructions on how to generate self-signed certificates and configure the server to use TLS.
+
+Generating Self-Signed Certificates
+You can use OpenSSL to generate a self-signed certificate and private key. Run the following commands in your terminal:
+
+bash
+Copy code
+# Generate a Private Key
+openssl genrsa -out key.pem 2048
+
+# Generate a Self-Signed Certificate
+openssl req -new -x509 -key key.pem -out cert.pem -days 365
+During the certificate creation process, you will be prompted to enter details such as the country, state, and common name (domain name). For local testing, you can use localhost as the common name.
+
+Configuring the Server for TLS
+Set the Environment Variable: Before starting the server, set the USE_TLS environment variable to true to enable TLS:
+bash
+Copy code
+export USE_TLS=true
+On Windows, you can set the environment variable like this:
+cmd
+Copy code
+set USE_TLS=true
+Move Certificates to Accessible Location: Ensure your certificates (cert.pem and key.pem) are placed in a directory accessible by the server application, or update the paths in the server code to match where you have stored these files.
+Start the Server: Run your server application. If the USE_TLS environment variable is set, it will start with TLS enabled and use the provided certificates:
+bash
+Copy code
+cargo run
+
+
+Testing TLS Configuration
+To test if TLS is working, you can use curl to make a request over HTTPS:
+
+curl -k https://localhost:3030/api/get/yourkey
+
+The -k flag tells curl to not validate the certificate, which is useful if you are using self-signed certificates.
+
+Notes
+Certificate Validation: For production environments, you should use certificates issued by a trusted CA and ensure your client validates these certificates appropriately.
+Firewall and Network Configuration: Make sure that the appropriate ports are open and accessible, and that TLS ports (typically 443 for HTTPS) are configured if different from your application's default.
+Troubleshooting
+TLS Errors: If you encounter errors related to TLS, verify the certificate and private key paths, ensure the environment variable is correctly set, and check that your certificates are not expired.
+Permission Issues: Ensure that the server has the necessary permissions to read the certificate and key files.
+Connection Refused: Check firewall settings and whether the correct port is being used and is open on your network.
+
+
