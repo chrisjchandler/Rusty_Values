@@ -117,7 +117,7 @@ Move Certificates to Accessible Location: Ensure your certificates (cert.pem and
 Start the Server: Run your server application. If the USE_TLS environment variable is set, it will start with TLS enabled and use the provided certificates:
 
 
-Certainly! Below is a suggested amendment for your README.md file that includes instructions on how to enable TLS for your server. This assumes that you have already set up the server code to support optional TLS as discussed previously.
+
 
 Enabling TLS
 To secure the API with TLS, you will need to obtain TLS certificates. You can use self-signed certificates for testing or certificates issued by a Certificate Authority (CA) for production environments. Below are instructions on how to generate self-signed certificates and configure the server to use TLS.
